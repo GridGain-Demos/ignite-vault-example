@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+                           http://www.springframework.org/schema/beans/spring-beans.xsd
+                           http://www.springframework.org/schema/util
+                           http://www.springframework.org/schema/util/spring-util.xsd">
+
+    <bean id="cachestore_connection" class="com.gridgain.ecosystem.vault.VaultDataSourceProxy">
+        <property name="proxy">
+            <bean id="mysql_database_bean" class="com.mysql.cj.jdbc.MysqlDataSource">
+                <property name="url" value="jdbc:mysql://127.0.0.1/"/>
+                <property name="databaseName" value="gridgain"/>
+                <property name="user" value="root"/>
+            </bean>
+        </property>
+        <property name="vaultAddress" value="http://127.0.0.1:8200"/>
+        <property name="vaultToken" value="s.qvumfh9rkHAgYYMibdyeGPBT"/>
+        <property name="passwordPath" value="secret/mysql"/>
+        <property name="passwordProperty" value="password"/>
+    </bean>
+
+    <bean class="org.apache.ignite.configuration.IgniteConfiguration">
+        <property name="cacheConfiguration">
+            <list>
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
+                    <property name="name" value="PERSON_CACHE"/>
+                    <property name="cacheMode" value="PARTITIONED"/>
+                    <property name="atomicityMode" value="ATOMIC"/>
+                    <property name="copyOnRead" value="true"/>
+
+                    <property name="cacheStoreFactory">
+                        <bean class="org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreFactory">
+                            <property name="dataSourceBean" value="cachestore_connection"/>
+                            <property name="dialect">
+                                <bean class="org.apache.ignite.cache.store.jdbc.dialect.MySQLDialect">
+                                </bean>
+                            </property>
+
+                            <property name="types">
+                                <list>
+                                    <bean class="org.apache.ignite.cache.store.jdbc.JdbcType">
+                                        <property name="cacheName" value="PERSON_CACHE"/>
+                                        <property name="keyType" value="java.lang.Long"/>
+                                        <property name="valueType" value="com.gridgain.ecosystem.vault.vault.model.Person"/>
+                                        <property name="databaseSchema" value="gridgain"/>
+                                        <property name="databaseTable" value="Person"/>
+
+                                        <property name="keyFields">
+                                            <list>
+                                                <bean class="org.apache.ignite.cache.store.jdbc.JdbcTypeField">
+                                                    <constructor-arg>
+                                                        <util:constant static-field="java.sql.Types.INTEGER"/>
+                                                    </constructor-arg>
+                                                    <constructor-arg value="id"/>
+                                                    <constructor-arg value="java.lang.Long"/>
+                                                    <constructor-arg value="id"/>
+                                                </bean>
+                                            </list>
+                                        </property>
+
+                                        <property name="valueFields">
+                                            <list>
+                                                <bean class="org.apache.ignite.cache.store.jdbc.JdbcTypeField">
+                                                    <constructor-arg>
+                                                        <util:constant static-field="java.sql.Types.INTEGER"/>
+                                                    </constructor-arg>
+                                                    <constructor-arg value="id"/>
+                                                    <constructor-arg value="java.lang.Long"/>
+                                                    <constructor-arg value="id"/>
+                                                </bean>
+
+                                                <bean class="org.apache.ignite.cache.store.jdbc.JdbcTypeField">
+                                                    <constructor-arg>
+                                                        <util:constant static-field="java.sql.Types.NVARCHAR"/>
+                                                    </constructor-arg>
+                                                    <constructor-arg value="name"/>
+                                                    <constructor-arg value="java.lang.String"/>
+                                                    <constructor-arg value="name"/>
+                                                </bean>
+
+                                                <bean class="org.apache.ignite.cache.store.jdbc.JdbcTypeField">
+                                                    <constructor-arg>
+                                                        <util:constant static-field="java.sql.Types.INTEGER"/>
+                                                    </constructor-arg>
+                                                    <constructor-arg value="height"/>
+                                                    <constructor-arg value="java.lang.Integer"/>
+                                                    <constructor-arg value="height"/>
+                                                </bean>
+                                            </list>
+                                        </property>
+                                    </bean>
+                                </list>
+                            </property>
+                        </bean>
+                    </property>
+
+                    <property name="readThrough" value="true"/>
+                    <property name="writeThrough" value="true"/>
+                    <property name="eagerTtl" value="true"/>
+
+                    <property name="queryEntities">
+                        <list>
+                            <bean class="org.apache.ignite.cache.QueryEntity">
+                                <property name="keyType" value="java.lang.Long"/>
+                                <property name="valueType" value="com.gridgain.ecosystem.vault.vault.model.Person"/>
+                                <property name="tableName" value="Person"/>
+                                <property name="keyFieldName" value="id"/>
+
+                                <property name="keyFields">
+                                    <list>
+                                        <value>id</value>
+                                    </list>
+                                </property>
+
+                                <property name="fields">
+                                    <map>
+                                        <entry key="id" value="java.lang.Long"/>
+                                        <entry key="name" value="java.lang.String"/>
+                                        <entry key="height" value="java.lang.Integer"/>
+                                    </map>
+                                </property>
+
+                                <property name="indexes">
+                                    <list>
+                                        <bean class="org.apache.ignite.cache.QueryIndex">
+                                            <property name="name" value="name_idx"/>
+                                            <property name="indexType" value="SORTED"/>
+
+                                            <property name="fields">
+                                                <map>
+                                                    <entry key="name" value="true"/>
+                                                </map>
+                                            </property>
+                                        </bean>
+                                    </list>
+                                </property>
+                            </bean>
+                        </list>
+                    </property>
+                </bean>
+            </list>
+        </property>
+    </bean>
+</beans>
